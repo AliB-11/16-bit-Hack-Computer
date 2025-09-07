@@ -1,0 +1,84 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/CPU.hdl
+/**
+ * The Hack Central Processing unit (CPU).
+ * Parses the binary code in the instruction input and executes it according to the
+ * Hack machine language specification. In the case of a C-instruction, computes the
+ * function specified by the instruction. If the instruction specifies to read a memory
+ * value, the inM input is expected to contain this value. If the instruction specifies
+ * to write a value to the memory, sets the outM output to this value, sets the addressM
+ * output to the target address, and asserts the writeM output (when writeM = 0, any
+ * value may appear in outM).
+ * If the reset input is 0, computes the address of the next instruction and sets the
+ * pc output to that value. If the reset input is 1, sets pc to 0.
+ * Note: The outM and writeM outputs are combinational: they are affected by the
+ * instruction's execution during the current cycle. The addressM and pc outputs are
+ * clocked: although they are affected by the instruction's execution, they commit to
+ * their new values only in the next cycle.
+ */
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+
+    //Mux for A or C insturction
+    Mux16(a=false, b=instruction, sel=instruction[15], 
+    out[0] = JumpGreater,
+    out[1] = JumpEqual,
+    out[2] = JumpLess,
+    out[3] = mRegister,
+    out[3] = writeM,
+    out[4] = destD,
+    out[5] = destA,
+    out[6] = AluNo,
+    out[7] = AluF,
+    out[8] = AluNy,
+    out[9] = AluZy,
+    out[10] = AluNx,
+    out[11] = AluZx,
+    out[12] = AorM,
+    out[15] = registerType);
+
+    //Alu inputs
+	ALU(x=regDOut, y=yIn, zx=AluZx, nx=AluNx, zy=AluZy, ny=AluNy, f=AluF, no=AluNo, out=AluOut, zr=zrOut, ng=ngOut);
+    Or16(a=AluOut, b=false, out=outM);
+ 
+    //Alu outputs
+    Not(in=zrOut, out=nZrOut);
+    Not(in=ngOut, out=ngN);
+    And(a=ngN, b=nZrOut, out=posBit);
+
+    //Load Register A
+    Mux16(a=instruction, b=AluOut, sel=registerType, out=outA);
+    Not(in=registerType, out=notRType);
+    Or(a=notRType, b=destA, out=loadA);
+    ARegister(in=outA, load=loadA, out=regAOut, out[0..14] = addressM);
+    Mux16(a=regAOut, b=inM, sel=AorM, out=yIn);
+   
+    //Load Register D
+    DRegister(in=AluOut, load=destD, out=regDOut);
+  
+
+    //jump logic circuit for PC
+    And(a=JumpLess, b=ngOut, out=less);
+    And(a=JumpEqual, b=zrOut, out=equal);
+    And(a=JumpGreater, b=posBit, out=greater);
+    Or(a=less, b=equal, out=loadL);
+    Or(a=loadL, b=greater, out=loadPC);
+
+    //PC
+    PC(in=regAOut, load=loadPC, inc=true, reset=reset,out[0..14]=pc);
+    
+}
