@@ -2,7 +2,7 @@
 
 ## Project overview
 
-The following describes details on how I implemented the **Hack Computer** from the nand2tetris course, including:
+The following describes in detail how I implemented the **Hack Computer** from the nand2tetris course, which includes:
 
 - The **ALU** and supporting logic
 - The **CPU** (registers, program counter, control)
@@ -49,13 +49,13 @@ For full course details and reference material see the nand2tetris site: <https:
 - ALU
 - A and D registers
 - Program Counter
-- reades and writes to memory
+- Memory Register (read/write)
 
 ---
 
 ## Assembler
 
-The assembler is a **two-pass assembler written in C++**.
+This is a **two-pass assembler written in C++**.
 
-- **Pass 1:** builds a symbol table, mapping labels `(LOOP)` and variables to memory or instruction addresses.
+- **Pass 1:** builds a symbol table, mapping labels such as `(LOOP)` and variables to memory or instruction addresses.
 - **Pass 2:** translates instructions into 16-bit machine code using the symbol table and lookup tables
